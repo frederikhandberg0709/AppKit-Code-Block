@@ -1,9 +1,9 @@
 # AppKit Code Block
 
+<img width="600" alt="Code block in macOS app window" src="https://github.com/user-attachments/assets/6c8f74cc-86b3-4ffc-87c1-96a25b229f35" />
+
 Code block for macOS with line numbers made in AppKit.
+
 Also includes syntax highlighting done using Highlightr (https://github.com/raspu/Highlightr.git).
 
 Hiding the line numbers is possible with a button in the UI.
-
-**Known bug:** It is currently not possible to select the last line if its empty - in other words, if it's a newline.
-Will be fixed ASAP.
