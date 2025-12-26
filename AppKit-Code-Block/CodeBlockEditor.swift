@@ -69,6 +69,8 @@ struct CodeBlockEditor: NSViewRepresentable {
             height: CGFloat.greatestFiniteMagnitude
         )
         
+        textView.coordinator = context.coordinator
+        
         // Store reference and set initial content
         context.coordinator.textStorage = textStorage
         
@@ -173,11 +175,13 @@ struct CodeBlockEditor: NSViewRepresentable {
         
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
-            
+            updateSelectedLines(for: textView)
+        }
+        
+        func updateSelectedLines(for textView: NSTextView) {
             let selectedRange = textView.selectedRange()
             let text = textView.string
             
-            // Calculate which lines are selected
             var newSelectedLines = Set<Int>()
             
             if selectedRange.length > 0 {
@@ -193,7 +197,6 @@ struct CodeBlockEditor: NSViewRepresentable {
                 if endIndex > 0 && endIndex <= text.count {
                     let index = text.index(text.startIndex, offsetBy: endIndex - 1)
                     if text[index] == "\n" {
-                        // Selection ends on newline, don't count the next line
                         endLine -= 1
                     }
                 }
@@ -208,7 +211,9 @@ struct CodeBlockEditor: NSViewRepresentable {
                 newSelectedLines.insert(currentLine)
             }
             
-            selectedLines = newSelectedLines
+            DispatchQueue.main.async { [weak self] in
+                self?.selectedLines = newSelectedLines
+            }
         }
         
         func textDidEndEditing(_ notification: Notification) {
@@ -324,6 +329,8 @@ struct CodeBlockEditor: NSViewRepresentable {
 
 // Custom NSTextView for intrinsic size
 class CodeTextView: NSTextView {
+    weak var coordinator: CodeBlockEditor.Coordinator?
+    
     override var intrinsicContentSize: NSSize {
         guard let layoutManager = layoutManager,
               let textContainer = textContainer
@@ -343,5 +350,14 @@ class CodeTextView: NSTextView {
     override func didChangeText() {
         super.didChangeText()
         invalidateIntrinsicContentSize()
+    }
+    
+    override func setSelectedRanges(_ ranges: [NSValue], affinity: NSSelectionAffinity, stillSelecting: Bool) {
+        super.setSelectedRanges(ranges, affinity: affinity, stillSelecting: stillSelecting)
+        
+        // Update line highlighting in real-time during selection drag
+        if stillSelecting {
+            coordinator?.updateSelectedLines(for: self)
+        }
     }
 }
